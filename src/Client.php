@@ -14,6 +14,7 @@ use ArrayObject;
 use BadMethodCallException;
 use Rebilly\Http\CurlHandler;
 use Rebilly\Middleware\LogHandler;
+use Rebilly\Rest\File;
 use RuntimeException;
 use InvalidArgumentException;
 use Psr\Http\Message\RequestInterface as Request;
@@ -391,6 +392,33 @@ final class Client
             return null;
         }
 
+        $responseParsers = [
+            'application/json' => [$this, 'parseJson'],
+            'application/pdf' => [$this, 'parsePdf'],
+        ];
+
+        if (!preg_match('/^(\w+\/\w+).*/i', $response->getHeaderLine('Content-Type'), $matches)) {
+            throw new InvalidArgumentException('Cannot determinate response content type');
+        }
+
+        $contentType = $matches[1];
+
+        if (!isset($responseParsers[$contentType])) {
+            throw new InvalidArgumentException('Unsupported response');
+        }
+
+        return call_user_func($responseParsers[$contentType], $request, $response, $contentType);
+    }
+
+    /**
+     * @param Request $request
+     * @param Response $response
+     * @param string $type
+     *
+     * @return mixed
+     */
+    protected function parseJson(Request $request, Response $response, $type)
+    {
         // Find resource type (URL) in response location or request url
         $location = $response->hasHeader('Location')
             ? $this->createUri($response->getHeaderLine('Location'))
@@ -426,6 +454,20 @@ final class Client
         $resource->populate($content);
 
         return $resource;
+    }
+
+    /**
+     * @param Request $request
+     * @param Response $response
+     * @param string $type
+     *
+     * @return File
+     */
+    protected function parsePdf(Request $request, Response $response, $type)
+    {
+        $body = $response->getBody();
+
+        return new File($type, (string) $body, $body->getSize());
     }
 
     /**
