@@ -150,7 +150,7 @@ final class Client
         }
 
         if (is_callable($apiKey)) {
-            $apiKey = (string) call_user_func($apiKey);
+            $apiKey = (string)call_user_func($apiKey);
         }
 
         if (isset($baseUrl)) {
@@ -168,7 +168,7 @@ final class Client
         if (!isset($logger)) {
             $logger = null;
         } elseif ($logger instanceof Logger) {
-            $logger = new LogHandler($logger, isset($logOptions) ? (array) $logOptions : []);
+            $logger = new LogHandler($logger, isset($logOptions) ? (array)$logOptions : []);
         } else {
             throw new RuntimeException('Logger should implement PSR-3 LoggerInterface');
         }
@@ -341,7 +341,7 @@ final class Client
     public function send($method, $payload, $path, $params = [], array $headers = [])
     {
         if (!is_array($params)) {
-            $params = (array) $params;
+            $params = (array)$params;
         }
 
         // Serialize $payload
@@ -373,6 +373,13 @@ final class Client
             throw new Http\Exception\UnprocessableEntityException($content);
         }
 
+        if ($response->getStatusCode() === 429) {
+            throw new Http\Exception\ClientException(
+                $response->getStatusCode(),
+                'Too many requests, retry after ' . $response->getHeaderLine('Retry-After')
+            );
+        }
+
         if ($response->getStatusCode() >= 500) {
             throw new Http\Exception\ServerException(
                 $response->getStatusCode(),
@@ -402,7 +409,7 @@ final class Client
         $uri = preg_replace('#^/' . self::CURRENT_VERSION . '#', '', $uri);
 
         // Unserialize response body
-        $content = json_decode((string) $response->getBody(), true) ?: [];
+        $content = json_decode((string)$response->getBody(), true) ?: [];
 
         // Build expected resource
         $resource = $this->factory->create($uri, []);
@@ -415,6 +422,9 @@ final class Client
                     'limit' => (int) $response->getHeaderLine('X-Pagination-Limit'),
                     'offset' => (int) $response->getHeaderLine('X-Pagination-Offset'),
                     'total' => (int) $response->getHeaderLine('X-Pagination-Total'),
+                    'rate-limit-limit' => (int) $response->getHeaderLine('X-Rate-Limit-Limit'),
+                    'rate-limit-remaining' => (int) $response->getHeaderLine('X-Rate-Limit-Remaining'),
+                    'rate-limit-reset' => $response->getHeaderLine('X-Rate-Limit-Reset'),
                 ],
             ];
         } else {
