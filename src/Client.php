@@ -374,9 +374,11 @@ final class Client
         }
 
         if ($response->getStatusCode() === 429) {
-            throw new Http\Exception\ClientException(
-                $response->getStatusCode(),
-                'Too many requests, retry after ' . $response->getHeaderLine('Retry-After')
+            throw new Http\Exception\TooManyRequestsException(
+                'Too many requests, retry after ' . $response->getHeaderLine('Retry-After'),
+                $response->getHeaderLine('X-Rate-Limit-Reset'),
+                $response->getHeaderLine('X-Rate-Limit-Limit'),
+                $response->getHeaderLine('X-Rate-Limit-Remaining')
             );
         }
 
@@ -422,9 +424,6 @@ final class Client
                     'limit' => (int) $response->getHeaderLine('X-Pagination-Limit'),
                     'offset' => (int) $response->getHeaderLine('X-Pagination-Offset'),
                     'total' => (int) $response->getHeaderLine('X-Pagination-Total'),
-                    'rate-limit-limit' => (int) $response->getHeaderLine('X-Rate-Limit-Limit'),
-                    'rate-limit-remaining' => (int) $response->getHeaderLine('X-Rate-Limit-Remaining'),
-                    'rate-limit-reset' => $response->getHeaderLine('X-Rate-Limit-Reset'),
                 ],
             ];
         } else {
