@@ -20,15 +20,13 @@ use Exception;
  */
 final class TooManyRequestsException extends ClientException
 {
-    private $retryAfter = '';
-    private $rateLimit = 0;
-    private $rateRemaining = 0;
+    private $retryAfter;
+    private $rateLimit;
 
-    public function __construct($message = "", $retryAfter = '', $rateLimit = 0, $rateRemaining = 0, $code = 0, Exception $previous = null)
+    public function __construct($retryAfter = '', $rateLimit = 0, $message = '', $code = 0, Exception $previous = null)
     {
         $this->retryAfter = $retryAfter;
         $this->rateLimit = $rateLimit;
-        $this->rateRemaining = $rateRemaining;
 
         parent::__construct(429, $message, $code, $previous);
     }
@@ -47,13 +45,5 @@ final class TooManyRequestsException extends ClientException
     public function getRateLimit()
     {
         return $this->rateLimit;
-    }
-
-    /**
-     * @return int
-     */
-    public function getRateRemaining()
-    {
-        return $this->rateRemaining;
     }
 }

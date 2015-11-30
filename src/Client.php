@@ -375,10 +375,9 @@ final class Client
 
         if ($response->getStatusCode() === 429) {
             throw new Http\Exception\TooManyRequestsException(
-                'Too many requests, retry after ' . $response->getHeaderLine('Retry-After'),
                 $response->getHeaderLine('X-Rate-Limit-Reset'),
                 $response->getHeaderLine('X-Rate-Limit-Limit'),
-                $response->getHeaderLine('X-Rate-Limit-Remaining')
+                'Too many requests, retry after ' . $response->getHeaderLine('Retry-After')
             );
         }
 
